@@ -296,6 +296,24 @@ public class FilterExtensionTests
     }
 
     [Fact]
+    public void TestTrueAndFalseConstant()
+    {
+        // came from here https://github.com/EntityGraphQL/EntityGraphQL/issues/314
+        var schema = SchemaBuilder.FromObject<TestDataContext2>();
+
+        var gql = new QueryRequest
+        {
+            Query =
+                @"query Query($filter: String!) {
+                    tasks(filter: $filter) { name }
+                }",
+            Variables = new QueryVariables { { "filter", "isActive == true && isActive = false)" } } // extra ) bracket
+        };
+        var tree = schema.ExecuteRequestWithContext(gql, new TestDataContext2().FillWithTestData(), null, null);
+        Assert.Null(tree.Errors);
+    }
+
+    [Fact]
     public void SupportUseFilterAnyMethod()
     {
         var schema = SchemaBuilder.FromObject<TestDataContext2>();

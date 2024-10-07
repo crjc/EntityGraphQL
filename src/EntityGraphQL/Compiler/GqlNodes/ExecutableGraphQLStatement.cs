@@ -192,29 +192,34 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
         Expression? expression = null;
         var contextParam = node.RootParameter;
 
-        if (node.HasServicesAtOrBelow(fragments) && compileContext.ExecutionOptions.ExecuteServiceFieldsSeparately == true)
+        var didService = false;
+        // We need to extract ParameterExpressions from the query body of any arguments
+        // This lets us correctly pass services to the compile context for use in extensions (like filtering)
+        foreach (var arg in node.Arguments)
         {
-            // We need to extract ParameterExpressions from the query body of any arguments
-            // This lets us correctly pass services to the compile context for use in extensions (like filtering)
-            foreach (var arg in node.Arguments)
+            var type = arg.Value.GetType();
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(EntityQueryType<>))
             {
-                var type = arg.Value.GetType();
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(EntityQueryType<>))
+                var query = type
+                    .GetProperty(nameof(EntityQueryType<object>.Query))
+                    ?.GetValue(arg.Value) as LambdaExpression;
+                if (query != null)
                 {
-                    var query = type
-                        .GetProperty(nameof(EntityQueryType<object>.Query))
-                        ?.GetValue(arg.Value) as LambdaExpression;
-                    if (query != null)
-                    {
-                        var extractedParameters = ExtractServiceParameters(query.Body)
-                            .Distinct()
-                            .ToList();
+                    var extractedParameters = ExtractServiceParameters(query.Body)
+                        .Distinct()
+                        .ToList();
 
+                    if (extractedParameters.Count > 0)
+                    {
+                        didService = true;
                         compileContext.AddServices(extractedParameters);
                     }
                 }
-            } 
+            }
+        }
 
+        if ((didService || node.HasServicesAtOrBelow(fragments)) && compileContext.ExecutionOptions.ExecuteServiceFieldsSeparately == true)
+        {
             // build this first as NodeExpression may modify ConstantParameters
             // this is without fields that require services
             expression = node.GetNodeExpression(

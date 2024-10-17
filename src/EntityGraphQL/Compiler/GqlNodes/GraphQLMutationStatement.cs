@@ -26,12 +26,15 @@ public class GraphQLMutationStatement : ExecutableGraphQLStatement
         List<GraphQLFragmentStatement> fragments,
         Func<string, string> fieldNamer,
         ExecutionOptions options,
-        QueryVariables? variables
+        QueryVariables? variables,
+        QueryRequestContext requestContext
     )
         where TContext : default
     {
         if (context == null && serviceProvider == null)
             throw new EntityGraphQLCompilerException("Either context or serviceProvider must be provided.");
+
+        Schema.CheckTypeAccess(Schema.GetSchemaType(Schema.MutationType, false, null), requestContext);
 
         var result = new ConcurrentDictionary<string, object?>();
         // pass to directives
@@ -43,7 +46,7 @@ public class GraphQLMutationStatement : ExecutableGraphQLStatement
 
         // Mutation fields don't directly have services to collect. This is handled after the mutation is executed.
         // When we are building/executing the selection on the mutation result services are handled
-        CompileContext compileContext = new(options, null);
+        CompileContext compileContext = new(options, null, requestContext);
         foreach (var field in QueryFields)
         {
             try
@@ -111,6 +114,7 @@ public class GraphQLMutationStatement : ExecutableGraphQLStatement
         object? docVariables
     )
     {
+        BaseGraphQLField.CheckFieldAccess(Schema, node.Field, compileContext.RequestContext);
         if (context == null)
             return null;
         // run the mutation to get the context for the query select
@@ -160,16 +164,7 @@ public class GraphQLMutationStatement : ExecutableGraphQLStatement
                     // yes we can
                     // rebuild the Expression so we keep any ConstantParameters
                     var item1 = listExp.Item1;
-                    var collectionNode = new GraphQLListSelectionField(
-                        Schema,
-                        null,
-                        resultExp.Name ?? "unknown",
-                        resultExp!.RootParameter,
-                        resultExp.RootParameter,
-                        item1,
-                        node,
-                        null
-                    );
+                    var collectionNode = new GraphQLListSelectionField(Schema, null, resultExp.Name ?? "unknown", resultExp!.RootParameter, resultExp.RootParameter, item1, node, null);
                     foreach (var queryField in resultExp.QueryFields)
                     {
                         collectionNode.AddField(queryField);

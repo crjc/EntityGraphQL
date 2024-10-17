@@ -1,8 +1,65 @@
+# 5.5.1
+
+## Fixes
+
+- Make sure top level types have access checked (Query, Mutation and Subscription)
+- Fix #392 - Better handle `null` checks when executing against in-memory data
+
+# 5.5.0
+
+## Changes
+
+- Add `IgnoreAttributes` to `SchemaBuilderOptions` - A list of Attribute types which will cause the builder to ignore the field/property when building the schema. These are additional to GraphQLIgnoreAttribute
+- `.Resolve<>()` method on field changes return type to `object?` to avoid warnings when returning a valid nullable service call etc.
+
+# 5.4.6
+
+## Fixes
+
+- Fix issue with inline arguments for mutation methods not being validated or trying to look for a service. e.g.
+
+```cs
+[GraphQLMutation]
+public static Expression<Func<MyContext, Movie>> AddMovie(
+    [Required(ErrorMessage = "Title is required")] string title,
+    [Range(1, 100, ErrorMessage = "Price must be between $1 and $100")] decimal price,
+    [StringLength(5, ErrorMessage = "Rating must be less than 5 characters")] string rating
+)
+```
+
+# 5.4.5
+
+## Fixes
+
+- Fix auth not correctly being checked for mutations or subscriptions. Issue was introduced in 5.4.2
+
+# 5.4.4
+
+## Fixes
+
+- Argument validator was incorrectly traversing types and properties it shouldn't which could cause stack overflows for some types
+- Fix validating inline arguments for mutation methods
+
+# 5.4.3
+
+## Fixes
+
+- #399 - Serialize `null` values if the field is requested as per the GraphQL spec
+- Make sure the naming policy set in `DefaultGraphQLResponseSerializer` is used for all fields
+
+# 5.4.2
+
+## Fixes
+
+- #393 - Handle `DateTimeOffset` in filter expressions
+- #398 - Make sure user credentials are not cached if using the compiled query cache
+
 # 5.4.1
 
 ## Fixes
 
 - #370 - Sort field extension (`[UseSort]` or `.UseSort()`), if building the sort argument input type from the dotnet fields/properties will now respect the `[GraphQLIgnore]` attribute on any fields.
+- #386 / #387 - Fix regressions in filter expressions
 
 # 5.4.0
 

@@ -25,25 +25,20 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 fields {
                     methodField
                 }
             }"
         };
 
-        var context = new ContextFieldWithMethod
-        {
-            Fields = new List<TypeWithMethod>()
-                 {
-                     new TypeWithMethod()
-                 }
-        };
+        var context = new ContextFieldWithMethod { Fields = new List<TypeWithMethod>() { new TypeWithMethod() } };
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(1, ((dynamic)res.Data["fields"])[0].methodField);
+        Assert.Equal(1, ((dynamic)res.Data!["fields"]!)[0].methodField);
     }
 
     [Fact]
@@ -62,28 +57,21 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod($value: Int!) {
+            Query =
+                @"query TypeWithMethod($value: Int!) {
                 fields {
                     methodFieldWithArgs(value: $value)
                 }
             }",
-            Variables = new QueryVariables {
-                     { "value", 13 }
-                 }
+            Variables = new QueryVariables { { "value", 13 } }
         };
 
-        var context = new ContextFieldWithMethod
-        {
-            Fields = new List<TypeWithMethod>()
-                 {
-                     new TypeWithMethod()
-                 }
-        };
+        var context = new ContextFieldWithMethod { Fields = new List<TypeWithMethod>() { new TypeWithMethod() } };
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(13, ((dynamic)res.Data["fields"])[0].methodFieldWithArgs);
+        Assert.Equal(13, ((dynamic)res.Data!["fields"]!)[0].methodFieldWithArgs);
     }
 
     [Fact]
@@ -102,25 +90,20 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 fields {
                     methodFieldWithOptionalArgs
                 }
             }"
         };
 
-        var context = new ContextFieldWithMethod
-        {
-            Fields = new List<TypeWithMethod>()
-                 {
-                     new TypeWithMethod()
-                 }
-        };
+        var context = new ContextFieldWithMethod { Fields = new List<TypeWithMethod>() { new TypeWithMethod() } };
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(20, ((dynamic)res.Data["fields"])[0].methodFieldWithOptionalArgs);
+        Assert.Equal(20, ((dynamic)res.Data!["fields"]!)[0].methodFieldWithOptionalArgs);
     }
 
     [Fact]
@@ -139,29 +122,21 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod($value: Int, $value2: Int) {
+            Query =
+                @"query TypeWithMethod($value: Int, $value2: Int) {
                 fields {
                     methodFieldWithTwoArgs(value: $value, value2: $value2)
                 }
             }",
-            Variables = new QueryVariables {
-                     { "value", 6 },
-                     { "value2", 7 },
-                 }
+            Variables = new QueryVariables { { "value", 6 }, { "value2", 7 }, }
         };
 
-        var context = new ContextFieldWithMethod
-        {
-            Fields = new List<TypeWithMethod>()
-                 {
-                     new TypeWithMethod()
-                 }
-        };
+        var context = new ContextFieldWithMethod { Fields = new List<TypeWithMethod>() { new TypeWithMethod() } };
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(13, ((dynamic)res.Data["fields"])[0].methodFieldWithTwoArgs);
+        Assert.Equal(13, ((dynamic)res.Data!["fields"]!)[0].methodFieldWithTwoArgs);
     }
 
     [Fact]
@@ -180,25 +155,20 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 fields {
                     methodFieldWithDefaultArgs
                 }
             }"
         };
 
-        var context = new ContextFieldWithMethod
-        {
-            Fields = new List<TypeWithMethod>()
-                 {
-                     new TypeWithMethod()
-                 }
-        };
+        var context = new ContextFieldWithMethod { Fields = new List<TypeWithMethod>() { new TypeWithMethod() } };
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(27, ((dynamic)res.Data["fields"])[0].methodFieldWithDefaultArgs);
+        Assert.Equal(27, ((dynamic)res.Data!["fields"]!)[0].methodFieldWithDefaultArgs);
     }
 
     [Fact]
@@ -218,28 +188,21 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod($value: Int) {
+            Query =
+                @"query TypeWithMethod($value: Int) {
                 fields {
                     renamedMethod(value: $value)
                 }
             }",
-            Variables = new QueryVariables {
-                { "value", 33 },
-            }
+            Variables = new QueryVariables { { "value", 33 }, }
         };
 
-        var context = new ContextFieldWithMethod
-        {
-            Fields =
-            [
-                new TypeWithMethod()
-            ]
-        };
+        var context = new ContextFieldWithMethod { Fields = [new TypeWithMethod()] };
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(33, ((dynamic)res.Data["fields"])[0].renamedMethod);
+        Assert.Equal(33, ((dynamic)res.Data!["fields"]!)[0].renamedMethod);
     }
 
     [Fact]
@@ -255,23 +218,18 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 testMethod
             }"
         };
 
-        var context = new ContextFieldWithMethod
-        {
-            Fields = new List<TypeWithMethod>()
-                 {
-                     new TypeWithMethod()
-                 }
-        };
+        var context = new ContextFieldWithMethod { Fields = new List<TypeWithMethod>() { new TypeWithMethod() } };
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(23, (dynamic)res.Data["testMethod"]);
+        Assert.Equal(23, (dynamic)res.Data!["testMethod"]!);
     }
 
     [Fact]
@@ -288,25 +246,20 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 fields {
                     staticMethodField(value: 88)
                 }
             }"
         };
 
-        var context = new ContextFieldWithMethod
-        {
-            Fields = new List<TypeWithMethod>()
-                {
-                    new TypeWithMethod()
-                }
-        };
+        var context = new ContextFieldWithMethod { Fields = new List<TypeWithMethod>() { new TypeWithMethod() } };
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(88, ((dynamic)res.Data["fields"])[0].staticMethodField);
+        Assert.Equal(88, ((dynamic)res.Data!["fields"]!)[0].staticMethodField);
     }
 
     [Fact]
@@ -322,7 +275,8 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 methodFieldWithService(value: 88)
             }"
         };
@@ -334,7 +288,7 @@ public class GraphQLFieldAttributeTests
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, serviceCollection.BuildServiceProvider(), null);
         Assert.Null(res.Errors);
-        Assert.Equal(44, (dynamic)res.Data["methodFieldWithService"]);
+        Assert.Equal(44, (dynamic)res.Data!["methodFieldWithService"]!);
     }
 
     [Fact]
@@ -350,7 +304,8 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 methodFieldWithServiceStatic(value: 88)
             }"
         };
@@ -362,7 +317,7 @@ public class GraphQLFieldAttributeTests
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, serviceCollection.BuildServiceProvider(), null);
         Assert.Null(res.Errors);
-        Assert.Equal(44, (dynamic)res.Data["methodFieldWithServiceStatic"]);
+        Assert.Equal(44, (dynamic)res.Data!["methodFieldWithServiceStatic"]!);
     }
 
     [Fact]
@@ -372,28 +327,23 @@ public class GraphQLFieldAttributeTests
 
         var sdl = schema.ToGraphQLSchemaString();
 
-        Assert.Contains("methodFieldWithArgs(name: String): String", sdl);
+        Assert.Contains("methodFieldWithArgs(name: String!): String", sdl);
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 complex {
                     methodFieldWithArgs(name: ""Superman"")
                 }
             }"
         };
 
-        var context = new ContextFieldWithMethod2
-        {
-            Complex = new List<TypeWithMethodArgs>
-                {
-                    new TypeWithMethodArgs()
-                }
-        };
+        var context = new ContextFieldWithMethod2 { Complex = new List<TypeWithMethodArgs> { new TypeWithMethodArgs() } };
 
         var res = schema.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
-        Assert.Equal("Superman", ((dynamic)res.Data["complex"])[0].methodFieldWithArgs);
+        Assert.Equal("Superman", ((dynamic)res.Data!["complex"]!)[0].methodFieldWithArgs);
     }
 
     [Fact]
@@ -403,29 +353,24 @@ public class GraphQLFieldAttributeTests
 
         var sdl = schema.ToGraphQLSchemaString();
 
-        Assert.Contains("methodFieldWithInput(props: MyArgs): String", sdl);
+        Assert.Contains("methodFieldWithInput(props: MyArgs!): String!", sdl);
         Assert.Contains("input MyArgs {", sdl);
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 complex {
                     methodFieldWithInput(props: { name: ""Superman"" })
                 }
             }"
         };
 
-        var context = new ContextFieldWithMethod3
-        {
-            Complex = new List<TypeWithMethodInput>
-                {
-                    new TypeWithMethodInput()
-                }
-        };
+        var context = new ContextFieldWithMethod3 { Complex = new List<TypeWithMethodInput> { new TypeWithMethodInput() } };
 
         var res = schema.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
-        Assert.Equal("Superman", ((dynamic)res.Data["complex"])[0].methodFieldWithInput);
+        Assert.Equal("Superman", ((dynamic)res.Data!["complex"]!)[0].methodFieldWithInput);
     }
 
     [Fact]
@@ -442,7 +387,8 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 getMyTask(id: 8) {
                     id  
                 }
@@ -454,7 +400,7 @@ public class GraphQLFieldAttributeTests
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(8, ((dynamic)res.Data["getMyTask"]).id);
+        Assert.Equal(8, ((dynamic)res.Data!["getMyTask"]!).id);
     }
 
     [Fact]
@@ -467,11 +413,12 @@ public class GraphQLFieldAttributeTests
 
         var sdl = schemaProvider.ToGraphQLSchemaString();
 
-        Assert.Contains("searchTasks(name: String): [Task!]", sdl);
+        Assert.Contains("searchTasks(name: String!): [Task!]", sdl);
 
         var gql = new QueryRequest
         {
-            Query = @"query TypeWithMethod {
+            Query =
+                @"query TypeWithMethod {
                 projects {
                     searchTasks(name: ""a"") {
                         id name
@@ -483,33 +430,25 @@ public class GraphQLFieldAttributeTests
         var context = new ContextFieldWithMethod
         {
             Projects = new List<Project>
+            {
+                new Project
                 {
-                    new Project
+                    Id = 1,
+                    Name = "Hello",
+                    Tasks = new List<Task>
                     {
-                        Id = 1,
-                        Name = "Hello",
-                        Tasks = new List<Task>
-                        {
-                            new Task
-                            {
-                                Id = 1,
-                                Name = "abba"
-                            },
-                            new Task
-                            {
-                                Id = 2,
-                                Name = "b"
-                            }
-                        }
+                        new Task { Id = 1, Name = "abba" },
+                        new Task { Id = 2, Name = "b" }
                     }
                 }
+            }
         };
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
         Assert.Null(res.Errors);
 
-        Assert.Equal(1, ((dynamic)res.Data["projects"])[0].searchTasks.Count);
-        Assert.Equal("abba", ((dynamic)res.Data["projects"])[0].searchTasks[0].name);
+        Assert.Equal(1, ((dynamic)res.Data!["projects"]!)[0].searchTasks.Count);
+        Assert.Equal("abba", ((dynamic)res.Data!["projects"]!)[0].searchTasks[0].name);
     }
 
     [Fact(Skip = "Not implemented yet - See explanation in other-data-sources.md")]
@@ -525,7 +464,8 @@ public class GraphQLFieldAttributeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query {
+            Query =
+                @"query {
                 fields {
                     id
                     fieldWithService(value: 88)
@@ -533,30 +473,23 @@ public class GraphQLFieldAttributeTests
             }"
         };
 
-        var context = new ContextFieldWithMethod
-        {
-            Fields = new List<TypeWithMethod>
-                {
-                    new TypeWithMethod()
-                }
-        };
+        var context = new ContextFieldWithMethod { Fields = new List<TypeWithMethod> { new TypeWithMethod() } };
         var serviceCollection = new ServiceCollection();
         var srv = new ConfigService();
         serviceCollection.AddSingleton(srv);
 
         var res = schemaProvider.ExecuteRequestWithContext(gql, context, serviceCollection.BuildServiceProvider(), null);
         Assert.Null(res.Errors);
-        Assert.Equal(88, ((dynamic)res.Data["fields"])[0].fieldWithService);
+        Assert.Equal(88, ((dynamic)res.Data!["fields"]!)[0].fieldWithService);
     }
 }
 
-
 public class ContextFieldWithMethod
 {
-    public IEnumerable<TypeWithMethod> Fields { get; set; }
-    public IEnumerable<TypeWithMethodArgs> Complex { get; set; }
+    public IEnumerable<TypeWithMethod> Fields { get; set; } = [];
+    public IEnumerable<TypeWithMethodArgs> Complex { get; set; } = [];
 
-    public IEnumerable<Project> Projects { get; set; }
+    public IEnumerable<Project> Projects { get; set; } = [];
 
     [GraphQLField]
     public int TestMethod() => 23;
@@ -567,6 +500,7 @@ public class ContextFieldWithMethod
         return new Task { Id = id };
     }
 }
+
 public class ContextFieldWithMethodService
 {
     [GraphQLField]
@@ -574,6 +508,7 @@ public class ContextFieldWithMethodService
     {
         return service.GetHalfInt(value);
     }
+
     [GraphQLField]
     public static int MethodFieldWithServiceStatic(ConfigService service, int value)
     {
@@ -583,7 +518,7 @@ public class ContextFieldWithMethodService
 
 public class ContextFieldWithMethod3
 {
-    public IEnumerable<TypeWithMethodInput> Complex { get; set; }
+    public IEnumerable<TypeWithMethodInput> Complex { get; set; } = [];
 }
 
 public class TypeWithMethodInput
@@ -598,8 +533,9 @@ public class TypeWithMethodInput
 
 public class ContextFieldWithMethod2
 {
-    public IEnumerable<TypeWithMethodArgs> Complex { get; set; }
+    public IEnumerable<TypeWithMethodArgs> Complex { get; set; } = [];
 }
+
 public class TypeWithMethodArgs
 {
     [GraphQLField]
@@ -612,7 +548,7 @@ public class TypeWithMethodArgs
 
 public class MyArgs
 {
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 }
 
 public class TypeWithMethod
@@ -638,7 +574,7 @@ public class TypeWithMethod
     }
 
     [GraphQLField]
-    public int methodFieldWithOptionalArgs(string value)
+    public int methodFieldWithOptionalArgs(string? value)
     {
         return 20;
     }

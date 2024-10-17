@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace EntityGraphQL.Schema.Validators
@@ -23,23 +22,24 @@ namespace EntityGraphQL.Schema.Validators
         /// <param name="context"></param>
         private static void ValidateMethodArguments(ArgumentValidatorContext context)
         {
-            if (context.Method != null)
+            if (context.Method != null && context.Arguments is IDictionary<string, object> asDict)
             {
-                if (context.Arguments is IEnumerable asEnumerable)
+                var methodParams = context.Method.GetParameters();
+                foreach (var arg in context.Field.Arguments)
                 {
-                    var value = asEnumerable.GetEnumerator();
-                    ParameterInfo[] parameters = context.Method.GetParameters();
+                    // find the arg in the method params
+                    var param = methodParams.FirstOrDefault(p => p.Name == arg.Key);
+                    if (param == null)
+                        continue;
 
-                    for (int i = 0; i < parameters.Length; i++)
+                    asDict.TryGetValue(arg.Key, out var value);
+                    if (value != null)
                     {
-                        if (!value.MoveNext())
-                            break;
-
-                        var customAttributes = parameters![i].GetCustomAttributes(typeof(ValidationAttribute), true).OfType<ValidationAttribute>();
+                        var customAttributes = param.GetCustomAttributes(typeof(ValidationAttribute), true).OfType<ValidationAttribute>();
                         if (customAttributes.Any())
                         {
                             var results = new List<ValidationResult>();
-                            if (!Validator.TryValidateValue(value.Current, new ValidationContext(value.Current), results, customAttributes))
+                            if (!Validator.TryValidateValue(value, new ValidationContext(value), results, customAttributes))
                             {
                                 results.ForEach(result =>
                                 {
@@ -56,7 +56,7 @@ namespace EntityGraphQL.Schema.Validators
         }
 
         /// <summary>
-        /// Validate the values of the object recursively against the validation attributes on the object itself 
+        /// Validate the values of the object recursively against the validation attributes on the object itself
         /// </summary>
         /// <param name="context"></param>
         /// <param name="obj"></param>
@@ -65,9 +65,7 @@ namespace EntityGraphQL.Schema.Validators
             if (obj == null)
                 return;
 
-            var results = new List<ValidationResult>();
-
-            if (obj is IEnumerable asEnumerable)
+            if (obj is IEnumerable asEnumerable && obj is not string)
             {
                 foreach (var enumObj in asEnumerable)
                 {
@@ -76,6 +74,8 @@ namespace EntityGraphQL.Schema.Validators
             }
             else
             {
+                var results = new List<ValidationResult>();
+
                 if (!Validator.TryValidateObject(obj, new ValidationContext(obj), results, true))
                 {
                     results.ForEach(result =>
@@ -87,8 +87,10 @@ namespace EntityGraphQL.Schema.Validators
                     });
                 }
 
-                var properties = obj!.GetType().GetProperties().Where(prop => prop.CanRead
-                    && prop.GetIndexParameters().Length == 0).ToList();
+                if (obj is string || obj.GetType().IsValueType)
+                    return;
+
+                var properties = obj!.GetType().GetProperties().Where(prop => prop.CanRead && prop.GetIndexParameters().Length == 0).ToList();
 
                 foreach (var property in properties)
                 {
@@ -117,7 +119,6 @@ namespace EntityGraphQL.Schema.Validators
                     {
                         continue;
                     }
-
 
                     ValidateObjectRecursive(context, value);
                 }

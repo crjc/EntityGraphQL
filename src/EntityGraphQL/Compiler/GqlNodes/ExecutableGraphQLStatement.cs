@@ -69,7 +69,8 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
         List<GraphQLFragmentStatement> fragments,
         Func<string, string> fieldNamer,
         ExecutionOptions options,
-        QueryVariables? variables
+        QueryVariables? variables,
+        QueryRequestContext requestContext
     )
     {
         if (context == null && serviceProvider == null)
@@ -99,7 +100,7 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
 #endif
                 var contextToUse = GetContextToUse(context, serviceProvider!, fieldNode)!;
 
-                (var data, var didExecute) = await CompileAndExecuteNodeAsync(new CompileContext(options, null), contextToUse, serviceProvider, fragments, fieldNode, docVariables);
+                (var data, var didExecute) = await CompileAndExecuteNodeAsync(new CompileContext(options, null, requestContext), contextToUse, serviceProvider, fragments, fieldNode, docVariables);
 #if DEBUG
                 if (options.IncludeDebugInfo)
                 {
@@ -130,8 +131,7 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
     protected static TContext GetContextToUse<TContext>(TContext? context, IServiceProvider serviceProvider, BaseGraphQLField fieldNode)
     {
         if (context == null)
-            return serviceProvider.GetService<TContext>()!
-                ?? throw new EntityGraphQLCompilerException($"Could not find service of type {typeof(TContext).Name} to execute field {fieldNode.Name}");
+            return serviceProvider.GetService<TContext>()! ?? throw new EntityGraphQLCompilerException($"Could not find service of type {typeof(TContext).Name} to execute field {fieldNode.Name}");
 
         return context;
     }
@@ -183,7 +183,7 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
 
         var replacer = new ParameterReplacer();
         // For root/top level fields we need to first select the whole graph without fields that require services
-        // so that EF Core 3.1+ can run and optimise the query against the DB
+        // so that EF Core can run and optimize the query against the DB
         // We then select the full graph from that context
 
         if (node.RootParameter == null)
@@ -222,19 +222,7 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
         {
             // build this first as NodeExpression may modify ConstantParameters
             // this is without fields that require services
-            expression = node.GetNodeExpression(
-                compileContext,
-                serviceProvider,
-                fragments,
-                OpVariableParameter,
-                docVariables,
-                contextParam,
-                withoutServiceFields: true,
-                null,
-                null,
-                false,
-                replacer
-            );
+            expression = node.GetNodeExpression(compileContext, serviceProvider, fragments, OpVariableParameter, docVariables, contextParam, withoutServiceFields: true, null, null, false, replacer);
             if (expression != null)
             {
                 // execute expression now and get a result that we will then perform a full select over
@@ -250,7 +238,7 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
                 var bulkData = ResolveBulkLoaders(compileContext, serviceProvider, node, runningContext, replacer, newContextType);
 
                 // new context
-                compileContext = new(compileContext.ExecutionOptions, bulkData);
+                compileContext = new(compileContext.ExecutionOptions, bulkData, compileContext.RequestContext);
 
                 // we now know the selection type without services and need to build the full select on that type
                 // need to rebuild the full query
@@ -274,19 +262,7 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
         if (expression == null)
         {
             // just do things normally
-            expression = node.GetNodeExpression(
-                compileContext,
-                serviceProvider,
-                fragments,
-                OpVariableParameter,
-                docVariables,
-                contextParam,
-                false,
-                null,
-                null,
-                contextChanged: false,
-                replacer
-            );
+            expression = node.GetNodeExpression(compileContext, serviceProvider, fragments, OpVariableParameter, docVariables, contextParam, false, null, null, contextChanged: false, replacer);
         }
 
         var data = await ExecuteExpressionAsync(expression, runningContext, contextParam, serviceProvider, replacer, compileContext, node, true);

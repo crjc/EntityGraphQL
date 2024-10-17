@@ -31,12 +31,15 @@ public class GraphQLSubscriptionStatement : GraphQLMutationStatement
         List<GraphQLFragmentStatement> fragments,
         Func<string, string> fieldNamer,
         ExecutionOptions options,
-        QueryVariables? variables
+        QueryVariables? variables,
+        QueryRequestContext requestContext
     )
         where TContext : default
     {
         if (context == null && serviceProvider == null)
             throw new EntityGraphQLCompilerException("Either context or serviceProvider must be provided.");
+
+        Schema.CheckTypeAccess(Schema.GetSchemaType(Schema.SubscriptionType, false, null), requestContext);
 
         this.fragments = fragments;
         this.options = options;
@@ -50,7 +53,7 @@ public class GraphQLSubscriptionStatement : GraphQLMutationStatement
                 return result;
         }
 
-        CompileContext compileContext = new(options, null);
+        CompileContext compileContext = new(options, null, requestContext);
         foreach (var field in QueryFields)
         {
             try
@@ -66,7 +69,7 @@ public class GraphQLSubscriptionStatement : GraphQLMutationStatement
                     }
 #endif
                     var contextToUse = GetContextToUse(context, serviceProvider!, node)!;
-                    var data = await ExecuteAsync(node, contextToUse, serviceProvider, docVariables, options);
+                    var data = await ExecuteAsync(node, contextToUse, serviceProvider, docVariables, options, requestContext);
 #if DEBUG
                     if (options.IncludeDebugInfo)
                     {
@@ -98,11 +101,15 @@ public class GraphQLSubscriptionStatement : GraphQLMutationStatement
         TContext context,
         IServiceProvider? serviceProvider,
         object? docVariables,
-        ExecutionOptions executionOptions
+        ExecutionOptions executionOptions,
+        QueryRequestContext requestContext
     )
     {
         if (context == null)
             return null;
+
+        BaseGraphQLField.CheckFieldAccess(Schema, node.Field, requestContext);
+
         // execute the subscription set up method. It returns in IObservable<T>
         var result = await node.ExecuteSubscriptionAsync(context, serviceProvider, OpVariableParameter, docVariables, executionOptions);
 
@@ -116,16 +123,16 @@ public class GraphQLSubscriptionStatement : GraphQLMutationStatement
         return new GraphQLSubscribeResult(returnType, result, this, node);
     }
 
-    public object? ExecuteSubscriptionEvent<TQueryContext, TType>(GraphQLSubscriptionField node, TType eventValue, IServiceProvider serviceProvider)
+    public object? ExecuteSubscriptionEvent<TQueryContext, TType>(GraphQLSubscriptionField node, TType eventValue, IServiceProvider serviceProvider, QueryRequestContext requestContext)
     {
-        return ExecuteSubscriptionEventAsync<TQueryContext, TType>(node, eventValue, serviceProvider).GetAwaiter().GetResult();
+        return ExecuteSubscriptionEventAsync<TQueryContext, TType>(node, eventValue, serviceProvider, requestContext).GetAwaiter().GetResult();
     }
 
-    public Task<object?> ExecuteSubscriptionEventAsync<TQueryContext, TType>(GraphQLSubscriptionField node, TType eventValue, IServiceProvider serviceProvider)
+    public Task<object?> ExecuteSubscriptionEventAsync<TQueryContext, TType>(GraphQLSubscriptionField node, TType eventValue, IServiceProvider serviceProvider, QueryRequestContext requestContext)
     {
         var context = (TQueryContext)serviceProvider.GetRequiredService(typeof(TQueryContext));
 
-        var result = MakeSelectionFromResultAsync(new CompileContext(options!, null), node, node.ResultSelection!, context, serviceProvider, fragments!, docVariables, eventValue);
+        var result = MakeSelectionFromResultAsync(new CompileContext(options!, null, requestContext), node, node.ResultSelection!, context, serviceProvider, fragments!, docVariables, eventValue);
         return result;
     }
 

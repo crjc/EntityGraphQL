@@ -1,12 +1,12 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using EntityGraphQL.Schema;
-using System.Collections.Generic;
 using EntityGraphQL.Compiler.Util;
-using System;
-using EntityGraphQL.Extensions;
-using HotChocolate.Language;
 using EntityGraphQL.Directives;
+using EntityGraphQL.Extensions;
+using EntityGraphQL.Schema;
+using HotChocolate.Language;
 
 namespace EntityGraphQL.Compiler
 {
@@ -18,7 +18,6 @@ namespace EntityGraphQL.Compiler
     {
         private readonly ISchemaProvider schemaProvider;
         private readonly QueryVariables variables;
-        private readonly QueryRequestContext requestContext;
         private ExecutableGraphQLStatement? currentOperation;
 
         /// <summary>
@@ -27,9 +26,8 @@ namespace EntityGraphQL.Compiler
         /// <value></value>
         public GraphQLDocument? Document { get; private set; }
 
-        public EntityGraphQLQueryWalker(ISchemaProvider schemaProvider, QueryVariables? variables, QueryRequestContext context)
+        public EntityGraphQLQueryWalker(ISchemaProvider schemaProvider, QueryVariables? variables)
         {
-            this.requestContext = context;
             this.schemaProvider = schemaProvider;
             variables ??= new QueryVariables();
             this.variables = variables;
@@ -48,6 +46,7 @@ namespace EntityGraphQL.Compiler
             Document = new GraphQLDocument(schemaProvider);
             base.VisitDocument(node, context);
         }
+
         protected override void VisitOperationDefinition(OperationDefinitionNode node, IGraphQLNode? context)
         {
             if (Document == null)
@@ -112,17 +111,25 @@ namespace EntityGraphQL.Compiler
                     varTypeInSchema = typeof(List<>).MakeGenericType(varTypeInSchema);
 
                 if (item.DefaultValue != null)
-                    defaultValue = Expression.Lambda(Expression.Constant(QueryWalkerHelper.ProcessArgumentValue(schemaProvider, item.DefaultValue, argName, varTypeInSchema))).Compile().DynamicInvoke();
+                    defaultValue = Expression
+                        .Lambda(Expression.Constant(QueryWalkerHelper.ProcessArgumentValue(schemaProvider, item.DefaultValue, argName, varTypeInSchema)))
+                        .Compile()
+                        .DynamicInvoke();
 
-                documentVariables.Add(argName, new ArgType(gqlTypeName, schemaType.TypeDotnet.Name, new GqlTypeInfo(() => schemaType, varTypeInSchema)
-                {
-                    TypeNotNullable = isRequired,
-                    ElementTypeNullable = !isRequired
-                }, null, varTypeInSchema)
-                {
-                    DefaultValue = defaultValue,
-                    IsRequired = isRequired
-                });
+                documentVariables.Add(
+                    argName,
+                    new ArgType(
+                        gqlTypeName,
+                        schemaType.TypeDotnet.Name,
+                        new GqlTypeInfo(() => schemaType, varTypeInSchema) { TypeNotNullable = isRequired, ElementTypeNullable = !isRequired },
+                        null,
+                        varTypeInSchema
+                    )
+                    {
+                        DefaultValue = defaultValue,
+                        IsRequired = isRequired
+                    }
+                );
 
                 if (item.Directives?.Any() == true)
                 {
@@ -145,15 +152,19 @@ namespace EntityGraphQL.Compiler
         {
             switch (item.Kind)
             {
-                case SyntaxKind.NamedType: return (((NamedTypeNode)item).Name.Value, false, false);
+                case SyntaxKind.NamedType:
+                    return (((NamedTypeNode)item).Name.Value, false, false);
                 case SyntaxKind.NonNullType:
-                    {
-                        var (_, isList, _) = GetGqlType(((NonNullTypeNode)item).Type);
-                        return (((NonNullTypeNode)item).NamedType().Name.Value, isList, true);
-                    }
-                case SyntaxKind.ListType: return (((ListTypeNode)item).Type.NamedType().Name.Value, true, false);
-                default: throw new EntityGraphQLCompilerException($"Unexpected node kind {item.Kind}");
-            };
+                {
+                    var (_, isList, _) = GetGqlType(((NonNullTypeNode)item).Type);
+                    return (((NonNullTypeNode)item).NamedType().Name.Value, isList, true);
+                }
+                case SyntaxKind.ListType:
+                    return (((ListTypeNode)item).Type.NamedType().Name.Value, true, false);
+                default:
+                    throw new EntityGraphQLCompilerException($"Unexpected node kind {item.Kind}");
+            }
+            ;
         }
 
         protected override void VisitField(FieldNode node, IGraphQLNode? context)
@@ -163,8 +174,8 @@ namespace EntityGraphQL.Compiler
             if (context.NextFieldContext == null)
                 throw new EntityGraphQLCompilerException("context.NextFieldContext should not be null visiting field");
 
-            var schemaType = context.Field?.ReturnType.SchemaType ?? schemaProvider.GetSchemaType(context.NextFieldContext.Type, context.Field?.FromType.GqlType == GqlTypes.InputObject, requestContext);
-            var actualField = schemaType.GetField(node.Name.Value, requestContext);
+            var schemaType = context.Field?.ReturnType.SchemaType ?? schemaProvider.GetSchemaType(context.NextFieldContext.Type, context.Field?.FromType.GqlType == GqlTypes.InputObject, null);
+            var actualField = schemaType.GetField(node.Name.Value, null);
 
             var args = node.Arguments != null ? ProcessArguments(actualField, node.Arguments) : null;
             var resultName = node.Alias?.Value ?? actualField.Name;
@@ -182,7 +193,16 @@ namespace EntityGraphQL.Compiler
                     if (mutationField.ReturnType.IsList)
                     {
                         // nulls are not known until mutation is executed. Will be handled in GraphQLMutationStatement
-                        var newSelect = new GraphQLListSelectionField(schemaProvider, actualField, resultName, (ParameterExpression)select.NextFieldContext!, select.RootParameter, select.RootParameter!, context, args);
+                        var newSelect = new GraphQLListSelectionField(
+                            schemaProvider,
+                            actualField,
+                            resultName,
+                            (ParameterExpression)select.NextFieldContext!,
+                            select.RootParameter,
+                            select.RootParameter!,
+                            context,
+                            args
+                        );
                         foreach (var queryField in select.QueryFields)
                         {
                             newSelect.AddField(queryField);
@@ -211,7 +231,16 @@ namespace EntityGraphQL.Compiler
                     if (subscriptionField.ReturnType.IsList)
                     {
                         // nulls are not known until subscription is executed. Will be handled in GraphQLSubscriptionStatement
-                        var newSelect = new GraphQLListSelectionField(schemaProvider, actualField, resultName, (ParameterExpression)select.NextFieldContext!, select.RootParameter, select.RootParameter!, context, args);
+                        var newSelect = new GraphQLListSelectionField(
+                            schemaProvider,
+                            actualField,
+                            resultName,
+                            (ParameterExpression)select.NextFieldContext!,
+                            select.RootParameter,
+                            select.RootParameter!,
+                            context,
+                            args
+                        );
                         foreach (var queryField in select.QueryFields)
                         {
                             newSelect.AddField(queryField);
@@ -273,7 +302,7 @@ namespace EntityGraphQL.Compiler
             {
                 // yes we can
                 // rebuild the Expression so we keep any ConstantParameters
-                var returnType = schemaProvider.GetSchemaType(listExp.Item1.Type.GetEnumerableOrArrayType()!, context.Field?.FromType.GqlType == GqlTypes.InputObject, requestContext);
+                var returnType = schemaProvider.GetSchemaType(listExp.Item1.Type.GetEnumerableOrArrayType()!, context.Field?.FromType.GqlType == GqlTypes.InputObject, null);
                 // TODO this doubles the field visit
                 var collectionNode = BuildDynamicSelectOnCollection(fieldContext, listExp.Item1, returnType, name, context, selection, arguments);
                 return new GraphQLCollectionToSingleField(schemaProvider, collectionNode, graphQLNode, listExp.Item2!);
@@ -285,7 +314,15 @@ namespace EntityGraphQL.Compiler
         /// Given a syntax of someCollection { fields, to, selection, from, object }
         /// it will build a select assuming 'someCollection' is an IEnumerable
         /// </summary>
-        private GraphQLListSelectionField BuildDynamicSelectOnCollection(IField actualField, Expression nodeExpression, ISchemaType returnType, string resultName, IGraphQLNode context, SelectionSetNode selection, Dictionary<string, object>? arguments)
+        private GraphQLListSelectionField BuildDynamicSelectOnCollection(
+            IField actualField,
+            Expression nodeExpression,
+            ISchemaType returnType,
+            string resultName,
+            IGraphQLNode context,
+            SelectionSetNode selection,
+            Dictionary<string, object>? arguments
+        )
         {
             if (context == null)
                 throw new EntityGraphQLCompilerException("context should not be null building select on collection");
@@ -308,7 +345,14 @@ namespace EntityGraphQL.Compiler
         /// <param name="context"></param>
         /// <param name="selectContext"></param>
         /// <returns></returns>
-        private GraphQLObjectProjectionField BuildDynamicSelectForObjectGraph(IField actualField, Expression nodeExpression, IGraphQLNode context, string name, SelectionSetNode selection, Dictionary<string, object>? arguments)
+        private GraphQLObjectProjectionField BuildDynamicSelectForObjectGraph(
+            IField actualField,
+            Expression nodeExpression,
+            IGraphQLNode context,
+            string name,
+            SelectionSetNode selection,
+            Dictionary<string, object>? arguments
+        )
         {
             if (context == null)
                 throw new EntityGraphQLCompilerException("context should not be null visiting field");
@@ -418,7 +462,7 @@ namespace EntityGraphQL.Compiler
 
             if (node.TypeCondition is not null && context is not null)
             {
-                var type = schemaProvider.GetSchemaType(node.TypeCondition.Name.Value, requestContext);
+                var type = schemaProvider.GetSchemaType(node.TypeCondition.Name.Value, null);
                 if (type != null)
                 {
                     var fragParameter = Expression.Parameter(type.TypeDotnet, $"frag_{type.Name}");

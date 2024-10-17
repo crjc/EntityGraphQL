@@ -1,47 +1,46 @@
-﻿using EntityGraphQL.Schema;
-using Microsoft.Extensions.DependencyInjection;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text.Json;
+using EntityGraphQL.Schema;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EntityGraphQL.Tests
 {
-
-
     public class InheritanceAdvancedTest
     {
         public abstract class Entity
         {
             public int Id { get; set; }
+
             [GraphQLIgnore]
             public int TenantId { get; set; }
         }
 
         public class Order : Entity
         {
-            public string Name { get; set; }
-            public Status Status { get; set; }
-            public ICollection<OrderItem> OrderItems { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public Status? Status { get; set; }
+            public ICollection<OrderItem> OrderItems { get; set; } = [];
         }
 
         public abstract class OrderItem : Entity
         {
-            public Status Status { get; set; }
+            public Status? Status { get; set; }
         }
 
         public class BookOrderItem : OrderItem
         {
-            public Book Book { get; set; }
+            public Book? Book { get; set; }
         }
 
         public class TShirtOrderItem : OrderItem
         {
             public int Size { get; set; }
             public int Colour { get; set; }
-            public TShirt TShirt { get; set; }
+            public TShirt? TShirt { get; set; }
 
             public static string FormatTShirtPropertiesAsString(int size, int colour)
             {
@@ -52,33 +51,29 @@ namespace EntityGraphQL.Tests
         public class Status
         {
             public int Id { get; set; }
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
             public bool IsDeleted { get; set; }
         }
 
         public abstract class Product : Entity
         {
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
         }
 
         public class Book : Product
         {
             public int Pages { get; set; }
-            public string Author { get; set; }
+            public string Author { get; set; } = string.Empty;
         }
 
-        public class TShirt : Product
-        {
-
-        }
+        public class TShirt : Product { }
 
         public class TestContext
         {
-            public IList<Order> Orders { get; set; }
-            public IList<Product> Products { get; set; }
-            public IList<Status> Statuses { get; set; }
+            public IList<Order> Orders { get; set; } = [];
+            public IList<Product> Products { get; set; } = [];
+            public IList<Status> Statuses { get; set; } = [];
         }
-
 
         [Fact]
         public void BookStoreInheritanceTest()
@@ -89,33 +84,29 @@ namespace EntityGraphQL.Tests
                 {
                     new Order()
                     {
-                         Id = 1,
-                         Name = "Barney",
-                         Status = new Status() { Id = 0, Name = "Pending" },
-                         OrderItems = new List<OrderItem>()
-                         {
-                              new TShirtOrderItem()
-                              {
-                                   Colour = 1,
-                                   Size = 7,
-                                   Status = new Status() { Id = 2, Name = "BackOrder" },
-                                   TShirt = new TShirt()
-                                    {
-                                        Id = 3,
-                                        Name = "SpiderMan"
-                                    }
-                              },
-                              new BookOrderItem()
-                              {
-                                  Status = new Status() { Id = 4, Name = "Shipped"},
-                                   Book = new Book()
-                                   {
-                                        Author = "Ben Riley",
-                                         Name = "My Life",
-                                          Pages = 300
-                                   }
-                              }
-                         }
+                        Id = 1,
+                        Name = "Barney",
+                        Status = new Status() { Id = 0, Name = "Pending" },
+                        OrderItems = new List<OrderItem>()
+                        {
+                            new TShirtOrderItem()
+                            {
+                                Colour = 1,
+                                Size = 7,
+                                Status = new Status() { Id = 2, Name = "BackOrder" },
+                                TShirt = new TShirt() { Id = 3, Name = "SpiderMan" }
+                            },
+                            new BookOrderItem()
+                            {
+                                Status = new Status() { Id = 4, Name = "Shipped" },
+                                Book = new Book()
+                                {
+                                    Author = "Ben Riley",
+                                    Name = "My Life",
+                                    Pages = 300
+                                }
+                            }
+                        }
                     }
                 }
             };
@@ -161,7 +152,7 @@ namespace EntityGraphQL.Tests
             var gql = System.Text.Json.JsonSerializer.Deserialize<QueryRequest>(q, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
             var results = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
             Assert.False(results.HasErrors());
-            var order = (dynamic)results.Data["order"];
+            var order = (dynamic)results.Data!["order"]!;
 
             Assert.Equal(4, order.GetType().GetFields().Length);
             Assert.Equal(1, order.id);
@@ -198,33 +189,29 @@ namespace EntityGraphQL.Tests
                 [
                     new Order()
                     {
-                         Id = 1,
-                         Name = "Barney",
-                         Status = new Status() { Id = 0, Name = "Pending" },
-                         OrderItems =
-                         [
-                              new TShirtOrderItem()
-                              {
-                                    Colour = 1,
-                                    Size = 7,
-                                    Status = new Status() { Id = 2, Name = "BackOrder" },
-                                    TShirt = new TShirt()
-                                    {
-                                        Id = 3,
-                                        Name = "SpiderMan"
-                                    }
-                              },
-                              new BookOrderItem()
-                              {
-                                    Status = new Status() { Id = 4, Name = "Shipped"},
-                                    Book = new Book()
-                                    {
-                                        Author = "Ben Riley",
-                                        Name = "My Life",
-                                        Pages = 300
-                                    }
-                              }
-                         ]
+                        Id = 1,
+                        Name = "Barney",
+                        Status = new Status() { Id = 0, Name = "Pending" },
+                        OrderItems =
+                        [
+                            new TShirtOrderItem()
+                            {
+                                Colour = 1,
+                                Size = 7,
+                                Status = new Status() { Id = 2, Name = "BackOrder" },
+                                TShirt = new TShirt() { Id = 3, Name = "SpiderMan" }
+                            },
+                            new BookOrderItem()
+                            {
+                                Status = new Status() { Id = 4, Name = "Shipped" },
+                                Book = new Book()
+                                {
+                                    Author = "Ben Riley",
+                                    Name = "My Life",
+                                    Pages = 300
+                                }
+                            }
+                        ]
                     }
                 ]
             };
@@ -278,7 +265,7 @@ namespace EntityGraphQL.Tests
             var gql = JsonSerializer.Deserialize<QueryRequest>(q, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
             var results = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
             Assert.False(results.HasErrors());
-            var order = (dynamic)results.Data["order"];
+            var order = (dynamic)results.Data!["order"]!;
 
             Assert.Equal(4, order.GetType().GetFields().Length);
             Assert.Equal(1, order.id);
@@ -315,37 +302,32 @@ namespace EntityGraphQL.Tests
                 {
                     new Order()
                     {
-                         Id = 1,
-                         Name = "Barney",
-                         Status = new Status() { Id = 0, Name = "Pending" },
-                         OrderItems = new List<OrderItem>()
-                         {
-                              new TShirtOrderItem()
-                              {
-                                   Colour = 1,
-                                   Size = 7,
-                                   Status = new Status() { Id = 2, Name = "BackOrder" },
-                                   TShirt = new TShirt()
-                                    {
-                                        Id = 3,
-                                        Name = "SpiderMan"
-                                    }
-                              },
-                              new BookOrderItem()
-                              {
-                                  Status = new Status() { Id = 4, Name = "Shipped"},
-                                   Book = new Book()
-                                   {
-                                        Author = "Ben Riley",
-                                         Name = "My Life",
-                                          Pages = 300
-                                   }
-                              }
-                         }
+                        Id = 1,
+                        Name = "Barney",
+                        Status = new Status() { Id = 0, Name = "Pending" },
+                        OrderItems = new List<OrderItem>()
+                        {
+                            new TShirtOrderItem()
+                            {
+                                Colour = 1,
+                                Size = 7,
+                                Status = new Status() { Id = 2, Name = "BackOrder" },
+                                TShirt = new TShirt() { Id = 3, Name = "SpiderMan" }
+                            },
+                            new BookOrderItem()
+                            {
+                                Status = new Status() { Id = 4, Name = "Shipped" },
+                                Book = new Book()
+                                {
+                                    Author = "Ben Riley",
+                                    Name = "My Life",
+                                    Pages = 300
+                                }
+                            }
+                        }
                     }
                 }
             };
-
 
             var schemaProvider = SchemaBuilder.FromObject<TestContext>();
             schemaProvider.AddType<BookOrderItem>("BookOrderItem").ImplementAllBaseTypes().AddAllFields();
@@ -384,19 +366,17 @@ namespace EntityGraphQL.Tests
                 }
             }".Replace('\r', ' ').Replace('\n', ' ');
 
-
             var gql = JsonSerializer.Deserialize<QueryRequest>(q, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
             var results = schemaProvider.ExecuteRequestWithContext(gql, context, null, null);
 
             if (results.HasErrors())
             {
-                throw new Exception(results.Errors.First().Message);
+                throw new Exception(results.Errors!.First().Message);
             }
 
             //Uncomment these guys to have the test fail properly
             Assert.False(results.HasErrors());
-            var order = (dynamic)results.Data["order"];
-
+            var order = (dynamic)results.Data!["order"]!;
         }
 
         public class TestService
@@ -421,37 +401,32 @@ namespace EntityGraphQL.Tests
                 {
                     new Order()
                     {
-                         Id = 1,
-                         Name = "Barney",
-                         Status = new Status() { Id = 0, Name = "Pending" },
-                         OrderItems = new List<OrderItem>()
-                         {
-                              new TShirtOrderItem()
-                              {
-                                   Colour = 1,
-                                   Size = 7,
-                                   Status = new Status() { Id = 2, Name = "BackOrder" },
-                                   TShirt = new TShirt()
-                                    {
-                                        Id = 3,
-                                        Name = "SpiderMan"
-                                    }
-                              },
-                              new BookOrderItem()
-                              {
-                                  Status = new Status() { Id = 4, Name = "Shipped"},
-                                   Book = new Book()
-                                   {
-                                        Author = "Ben Riley",
-                                         Name = "My Life",
-                                          Pages = 300
-                                   }
-                              }
-                         }
+                        Id = 1,
+                        Name = "Barney",
+                        Status = new Status() { Id = 0, Name = "Pending" },
+                        OrderItems = new List<OrderItem>()
+                        {
+                            new TShirtOrderItem()
+                            {
+                                Colour = 1,
+                                Size = 7,
+                                Status = new Status() { Id = 2, Name = "BackOrder" },
+                                TShirt = new TShirt() { Id = 3, Name = "SpiderMan" }
+                            },
+                            new BookOrderItem()
+                            {
+                                Status = new Status() { Id = 4, Name = "Shipped" },
+                                Book = new Book()
+                                {
+                                    Author = "Ben Riley",
+                                    Name = "My Life",
+                                    Pages = 300
+                                }
+                            }
+                        }
                     }
                 }
             };
-
 
             var schemaProvider = SchemaBuilder.FromObject<TestContext>();
             schemaProvider.AddType<BookOrderItem>("BookOrderItem").ImplementAllBaseTypes().AddAllFields();
@@ -462,8 +437,7 @@ namespace EntityGraphQL.Tests
 
             schemaProvider.UpdateType<TShirtOrderItem>(Order =>
             {
-                Order.AddField("statusAsString", "Get the order status as a string")
-                .ResolveWithService<TestService>((o, srv) => srv.FormatTShirtPropertiesAsString(o.Colour, o.Size));
+                Order.AddField("statusAsString", "Get the order status as a string").ResolveWithService<TestService>((o, srv) => srv.FormatTShirtPropertiesAsString(o.Colour, o.Size));
             });
 
             // Simulate a JSON request with System.Text.Json
@@ -491,7 +465,6 @@ namespace EntityGraphQL.Tests
                 }
             }".Replace('\r', ' ').Replace('\n', ' ');
 
-
             var gql = JsonSerializer.Deserialize<QueryRequest>(q, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
             var testService = new TestService();
             var sc = new ServiceCollection();
@@ -500,12 +473,12 @@ namespace EntityGraphQL.Tests
 
             if (results.HasErrors())
             {
-                throw new Exception(results.Errors.First().Message);
+                throw new Exception(results.Errors!.First().Message);
             }
 
             //Uncomment these guys to have the test fail properly
             Assert.False(results.HasErrors());
-            var order = (dynamic)results.Data["order"];
+            var order = (dynamic)results.Data!["order"]!;
 
             Assert.Equal("colour: 1 - size: 7", order.orderItems[0].statusAsString);
         }
@@ -519,37 +492,32 @@ namespace EntityGraphQL.Tests
                 [
                     new Order()
                     {
-                         Id = 1,
-                         Name = "Barney",
-                         Status = new Status() { Id = 0, Name = "Pending" },
-                         OrderItems =
-                         [
-                              new TShirtOrderItem()
-                              {
-                                   Colour = 1,
-                                   Size = 7,
-                                   Status = new Status() { Id = 2, Name = "BackOrder" },
-                                   TShirt = new TShirt()
-                                    {
-                                        Id = 3,
-                                        Name = "SpiderMan"
-                                    }
-                              },
-                              new BookOrderItem()
-                              {
-                                  Status = new Status() { Id = 4, Name = "Shipped"},
-                                   Book = new Book()
-                                   {
-                                        Author = "Ben Riley",
-                                         Name = "My Life",
-                                          Pages = 300
-                                   }
-                              }
-                         ]
+                        Id = 1,
+                        Name = "Barney",
+                        Status = new Status() { Id = 0, Name = "Pending" },
+                        OrderItems =
+                        [
+                            new TShirtOrderItem()
+                            {
+                                Colour = 1,
+                                Size = 7,
+                                Status = new Status() { Id = 2, Name = "BackOrder" },
+                                TShirt = new TShirt() { Id = 3, Name = "SpiderMan" }
+                            },
+                            new BookOrderItem()
+                            {
+                                Status = new Status() { Id = 4, Name = "Shipped" },
+                                Book = new Book()
+                                {
+                                    Author = "Ben Riley",
+                                    Name = "My Life",
+                                    Pages = 300
+                                }
+                            }
+                        ]
                     }
                 ]
             };
-
 
             var schemaProvider = SchemaBuilder.FromObject<TestContext>();
             schemaProvider.AddType<BookOrderItem>("BookOrderItem").ImplementAllBaseTypes().AddAllFields();
@@ -560,8 +528,9 @@ namespace EntityGraphQL.Tests
 
             schemaProvider.UpdateType<TShirtOrderItem>(Order =>
             {
-                Order.AddField("statusAsString", new { Length = 0 }, "Get the order status as a string")
-                .ResolveWithService<TestService>((o, args, srv) => srv.FormatTShirtPropertiesAsString(o.Colour, o.Size, args.Length));
+                Order
+                    .AddField("statusAsString", new { Length = 0 }, "Get the order status as a string")
+                    .ResolveWithService<TestService>((o, args, srv) => srv.FormatTShirtPropertiesAsString(o.Colour, o.Size, args.Length));
             });
 
             // Simulate a JSON request with System.Text.Json
@@ -589,7 +558,6 @@ namespace EntityGraphQL.Tests
                 }
             }".Replace('\r', ' ').Replace('\n', ' ');
 
-
             var gql = JsonSerializer.Deserialize<QueryRequest>(q, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
             var sc = new ServiceCollection();
             sc.AddSingleton(new TestService());
@@ -597,12 +565,12 @@ namespace EntityGraphQL.Tests
 
             if (results.HasErrors())
             {
-                throw new Exception(results.Errors.First().Message);
+                throw new Exception(results.Errors!.First().Message);
             }
 
             //Uncomment these guys to have the test fail properly
             Assert.False(results.HasErrors());
-            var order = (dynamic)results.Data["order"];
+            var order = (dynamic)results.Data!["order"]!;
 
             Assert.Equal("colour: 1 - size: 7 - length: 2", order.orderItems[0].statusAsString);
         }

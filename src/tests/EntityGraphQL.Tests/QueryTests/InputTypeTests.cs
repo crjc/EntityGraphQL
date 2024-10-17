@@ -13,12 +13,11 @@ public class InputTypeTests
     {
         var schema = SchemaBuilder.FromObject<TestDataContext>();
         schema.AddInputType<PeopleArgs>("PeopleArgs", "people filter args").AddAllFields();
-        schema.Query().ReplaceField("people",
-            new { args = (PeopleArgs)null },
-            (p, param) => p.People, "Return people");
+        schema.Query().ReplaceField("people", new { args = (PeopleArgs?)null }, (p, param) => p.People, "Return people");
         var gql = new QueryRequest
         {
-            Query = @"query {
+            Query =
+                @"query {
                         __type(name: ""PeopleArgs"") {
                             name
                             fields {
@@ -29,9 +28,9 @@ public class InputTypeTests
         };
         var result = schema.ExecuteRequestWithContext(gql, new TestDataContext(), null, null);
         Assert.Null(result.Errors);
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "unit");
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "dayOfWeek");
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "name");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "unit");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "dayOfWeek");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "name");
     }
 
     [Fact]
@@ -39,12 +38,11 @@ public class InputTypeTests
     {
         var schema = SchemaBuilder.FromObject<TestDataContext>();
         schema.AddInputType<PeopleArgs>("PeopleArgs", "people filter args").AddAllFields();
-        schema.Query().ReplaceField("people",
-            new { args = (List<PeopleArgs>)null },
-            (p, param) => p.People, "Return people");
+        schema.Query().ReplaceField("people", new { args = (List<PeopleArgs>?)null }, (p, param) => p.People, "Return people");
         var gql = new QueryRequest
         {
-            Query = @"query {
+            Query =
+                @"query {
                         __type(name: ""PeopleArgs"") {
                             name
                             fields {
@@ -55,9 +53,9 @@ public class InputTypeTests
         };
         var result = schema.ExecuteRequestWithContext(gql, new TestDataContext(), null, null);
         Assert.Null(result.Errors);
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "unit");
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "dayOfWeek");
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "name");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "unit");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "dayOfWeek");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "name");
     }
 
     [Fact]
@@ -65,13 +63,20 @@ public class InputTypeTests
     {
         var schema = SchemaBuilder.FromObject<TestDataContext>();
         // testing that auto creation of mutation args does correctly add the type
-        schema.Mutation().Add("AddPerson", "Description", ([GraphQLInputType] List<PeopleArgs> args) =>
-        {
-            return true;
-        });
+        schema
+            .Mutation()
+            .Add(
+                "AddPerson",
+                "Description",
+                ([GraphQLInputType] List<PeopleArgs> args) =>
+                {
+                    return true;
+                }
+            );
         var gql = new QueryRequest
         {
-            Query = @"query {
+            Query =
+                @"query {
                         __type(name: ""PeopleArgs"") {
                             name
                             fields {
@@ -82,9 +87,9 @@ public class InputTypeTests
         };
         var result = schema.ExecuteRequestWithContext(gql, new TestDataContext(), null, null);
         Assert.Null(result.Errors);
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "unit");
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "dayOfWeek");
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "name");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "unit");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "dayOfWeek");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "name");
     }
 
     [Fact]
@@ -92,13 +97,20 @@ public class InputTypeTests
     {
         var schema = SchemaBuilder.FromObject<TestDataContext>();
         // testing that auto creation of mutation args does correctly add the type
-        schema.Mutation().Add("AddPerson", "Description", ([GraphQLArguments] TestMutationArgs args) =>
-        {
-            return true;
-        });
+        schema
+            .Mutation()
+            .Add(
+                "AddPerson",
+                "Description",
+                ([GraphQLArguments] TestMutationArgs args) =>
+                {
+                    return true;
+                }
+            );
         var gql = new QueryRequest
         {
-            Query = @"query {
+            Query =
+                @"query {
                         __type(name: ""PeopleArgs"") {
                             name
                             fields {
@@ -109,12 +121,13 @@ public class InputTypeTests
         };
         var result = schema.ExecuteRequestWithContext(gql, new TestDataContext(), null, null);
         Assert.Null(result.Errors);
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "unit");
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "dayOfWeek");
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "name");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "unit");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "dayOfWeek");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "name");
     }
 
     class TaskInput : Task { }
+
     class UserInput : User { }
 
     [Fact]
@@ -134,7 +147,7 @@ public class InputTypeTests
         schema.UpdateType<Task>(type =>
         {
             type.AddField("id", x => x.Id, null);
-            type.AddField("user", null).Resolve<TestDataContext>((p, ctx) => ctx.Users.FirstOrDefault(u => u.Id == p.Project.CreatedBy));
+            type.AddField("user", null).Resolve<TestDataContext>((p, ctx) => ctx.Users.FirstOrDefault(u => u.Id == p.Project!.CreatedBy));
         });
 
         var taskInput = schema.AddInputType<TaskInput>("TaskInput");
@@ -168,7 +181,7 @@ public class InputTypeTests
         schema.UpdateType<Task>(type =>
         {
             type.AddField("id", x => x.Id, null);
-            type.AddField("user", null).Resolve<TestDataContext>((p, ctx) => ctx.Users.FirstOrDefault(u => u.Id == p.Project.CreatedBy));
+            type.AddField("user", null).Resolve<TestDataContext>((p, ctx) => ctx.Users.FirstOrDefault(u => u.Id == p.Project!.CreatedBy));
         });
 
         var taskInput = schema.AddInputType<Task>("TaskInput");
@@ -182,6 +195,7 @@ public class InputTypeTests
         schema.Query().AddField("tasks", (ctx) => ctx.Tasks, "Get a tasks");
         return schema;
     }
+
     [Fact]
     public void SupportsQueryTypeAsInputType()
     {
@@ -190,6 +204,7 @@ public class InputTypeTests
         var result = schema.ToGraphQLSchemaString();
         Assert.Contains("input UserInput {\n\tid: Int!\n\ttasks: [TaskInput!]\n}", result);
     }
+
     [Fact]
     public void SupportsQueryTypeAsInputTypeIntrospection()
     {
@@ -197,7 +212,8 @@ public class InputTypeTests
 
         var gql = new QueryRequest
         {
-            Query = @"query {
+            Query =
+                @"query {
                         __type(name: ""UserInput"") {
                             name
                             fields {
@@ -209,9 +225,9 @@ public class InputTypeTests
         };
         var result = schema.ExecuteRequestWithContext(gql, new TestDataContext(), null, null);
         Assert.Null(result.Errors);
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "id");
-        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data["__type"]).fields, f => f.name == "tasks");
-        Assert.Equal("TaskInput", ((dynamic)result.Data["__type"]).fields[1].type.ofType.name);
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "id");
+        Assert.Contains((IEnumerable<dynamic>)((dynamic)result.Data!["__type"]!).fields, f => f.name == "tasks");
+        Assert.Equal("TaskInput", ((dynamic)result.Data!["__type"]!).fields[1].type.ofType.name);
     }
 
     [Fact]
@@ -231,7 +247,7 @@ public class InputTypeTests
         schema.UpdateType<Task>(type =>
         {
             type.AddField("id", x => x.Id, null);
-            type.AddField("user", null).Resolve<TestDataContext>((p, ctx) => ctx.Users.FirstOrDefault(u => u.Id == p.Project.CreatedBy));
+            type.AddField("user", null).Resolve<TestDataContext>((p, ctx) => ctx.Users.FirstOrDefault(u => u.Id == p.Project!.CreatedBy));
         });
 
         var taskInput = schema.AddInputType<Task>("TaskInput");
@@ -239,7 +255,8 @@ public class InputTypeTests
 
         var userInput = schema.AddInputType<User>("UserInput");
         userInput.AddField("id", x => x.Id, null);
-        userInput.AddField("tasks", x => x.Tasks, null)
+        userInput
+            .AddField("tasks", x => x.Tasks, null)
             // Here we tell it what it returns
             .Returns("TaskInput");
 
@@ -255,11 +272,12 @@ public class InputTypeTests
     {
         public List<PeopleArgs> People { get; set; } = new();
     }
+
     internal class PeopleArgs
     {
         // System enum
         public DayOfWeek DayOfWeek { get; set; }
         public HeightUnit Unit { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 }

@@ -192,12 +192,7 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
 
         Query().ReplaceField("__schema", db => SchemaIntrospection.Make(this), "Introspection of the schema").Returns("__Schema");
         Query()
-            .ReplaceField(
-                "__type",
-                new { name = ArgumentHelper.Required<string>() },
-                (db, p) => SchemaIntrospection.Make(this).Types.Where(s => s.Name == p.name).First(),
-                "Query a type by name"
-            )
+            .ReplaceField("__type", new { name = ArgumentHelper.Required<string>() }, (db, p) => SchemaIntrospection.Make(this).Types.Where(s => s.Name == p.name).First(), "Query a type by name")
             .Returns("__Type");
     }
 
@@ -252,24 +247,12 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
     /// <param name="options"></param>
     /// <typeparam name="TContextType"></typeparam>
     /// <returns></returns>
-    public async Task<QueryResult> ExecuteRequestWithContextAsync(
-        QueryRequest gql,
-        TContextType context,
-        IServiceProvider? serviceProvider,
-        ClaimsPrincipal? user,
-        ExecutionOptions? options = null
-    )
+    public async Task<QueryResult> ExecuteRequestWithContextAsync(QueryRequest gql, TContextType context, IServiceProvider? serviceProvider, ClaimsPrincipal? user, ExecutionOptions? options = null)
     {
         return await DoExecuteRequestAsync(gql, context, serviceProvider, user, options);
     }
 
-    private async Task<QueryResult> DoExecuteRequestAsync(
-        QueryRequest gql,
-        TContextType? overwriteContext,
-        IServiceProvider? serviceProvider,
-        ClaimsPrincipal? user,
-        ExecutionOptions? options
-    )
+    private async Task<QueryResult> DoExecuteRequestAsync(QueryRequest gql, TContextType? overwriteContext, IServiceProvider? serviceProvider, ClaimsPrincipal? user, ExecutionOptions? options)
     {
         QueryResult result;
         try
@@ -278,8 +261,7 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
             GraphQLDocument? compiledQuery = null;
             if (options.EnablePersistedQueries)
             {
-                var persistedQuery = (PersistedQueryExtension?)
-                    ExpressionUtil.ChangeType(gql.Extensions.GetValueOrDefault("persistedQuery"), typeof(PersistedQueryExtension), null, options);
+                var persistedQuery = (PersistedQueryExtension?)ExpressionUtil.ChangeType(gql.Extensions.GetValueOrDefault("persistedQuery"), typeof(PersistedQueryExtension), null, options);
                 if (persistedQuery != null && persistedQuery.Version != 1)
                     throw new EntityGraphQLExecutionException("PersistedQueryNotSupported");
 
@@ -295,7 +277,7 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
                         throw new EntityGraphQLExecutionException("PersistedQueryNotFound");
                     else if (compiledQuery == null)
                     {
-                        compiledQuery = graphQLCompiler.Compile(gql, new QueryRequestContext(AuthorizationService, user));
+                        compiledQuery = graphQLCompiler.Compile(gql);
                         queryCache.AddCompiledQuery(hash, compiledQuery);
                     }
                 }
@@ -304,14 +286,14 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
                     // if here they sent query with no hash
                     // persisted queries will not auto cache it (only when you provide the hash) but is QueryCache is enabled we will cache it
                     if (options.EnableQueryCache)
-                        compiledQuery = CompileQueryWithCache(gql, options, user);
+                        compiledQuery = CompileQueryWithCache(gql, options);
                     else
-                        compiledQuery = graphQLCompiler.Compile(gql, new QueryRequestContext(AuthorizationService, user));
+                        compiledQuery = graphQLCompiler.Compile(gql);
                 }
             }
             else if (options.EnableQueryCache)
             {
-                compiledQuery = CompileQueryWithCache(gql, options, user);
+                compiledQuery = CompileQueryWithCache(gql, options);
             }
             else
             {
@@ -327,10 +309,10 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
                     throw new EntityGraphQLException("Query field must be set unless you are using persisted queries");
                 }
 
-                compiledQuery = graphQLCompiler.Compile(gql, new QueryRequestContext(AuthorizationService, user));
+                compiledQuery = graphQLCompiler.Compile(gql);
             }
 
-            result = await compiledQuery.ExecuteQueryAsync(overwriteContext, serviceProvider, gql.Variables, gql.OperationName, options);
+            result = await compiledQuery.ExecuteQueryAsync(overwriteContext, serviceProvider, gql.Variables, gql.OperationName, new QueryRequestContext(AuthorizationService, user), options);
         }
         catch (Exception ex)
         {
@@ -372,7 +354,7 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
         }
     }
 
-    private GraphQLDocument CompileQueryWithCache(QueryRequest gql, ExecutionOptions executionOptions, ClaimsPrincipal? user)
+    private GraphQLDocument CompileQueryWithCache(QueryRequest gql, ExecutionOptions executionOptions)
     {
         GraphQLDocument? compiledQuery;
         // try to get the compiled query from the cache
@@ -390,7 +372,7 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
         (compiledQuery, var hash) = queryCache.GetCompiledQuery(gql.Query, null);
         if (compiledQuery == null)
         {
-            compiledQuery = graphQLCompiler.Compile(gql, new QueryRequestContext(AuthorizationService, user));
+            compiledQuery = graphQLCompiler.Compile(gql);
             queryCache.AddCompiledQuery(hash, compiledQuery);
         }
 
@@ -573,7 +555,7 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
     public ISchemaType GetSchemaType(string typeName, QueryRequestContext? requestContext)
     {
         if (schemaTypes.TryGetValue(typeName, out var schemaType))
-            return SchemaProvider<TContextType>.CheckTypeAccess(schemaType, requestContext);
+            return CheckTypeAccess(schemaType, requestContext);
 
         throw new EntityGraphQLCompilerException($"Type {typeName} not found in schema");
     }
@@ -620,16 +602,16 @@ public class SchemaProvider<TContextType> : ISchemaProvider, IDisposable
         }
         if (schemaType == null)
             return false;
-        schemaType = SchemaProvider<TContextType>.CheckTypeAccess(schemaType, requestContext);
+        schemaType = CheckTypeAccess(schemaType, requestContext);
         return true;
     }
 
-    private static ISchemaType CheckTypeAccess(ISchemaType schemaType, QueryRequestContext? requestContext)
+    public ISchemaType CheckTypeAccess(ISchemaType schemaType, QueryRequestContext? requestContext)
     {
         if (requestContext == null)
             return schemaType;
 
-        if (requestContext.AuthorizationService != null && !requestContext.AuthorizationService.IsAuthorized(requestContext.User, schemaType.RequiredAuthorization))
+        if (!requestContext.AuthorizationService.IsAuthorized(requestContext.User, schemaType.RequiredAuthorization))
             throw new EntityGraphQLAccessException($"You are not authorized to access the '{schemaType.Name}' type.");
 
         return schemaType;

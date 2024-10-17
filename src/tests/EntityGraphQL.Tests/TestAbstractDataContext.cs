@@ -1,8 +1,8 @@
-using EntityGraphQL.Schema;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using EntityGraphQL.Schema;
 
 namespace EntityGraphQL.Tests
 {
@@ -37,16 +37,14 @@ namespace EntityGraphQL.Tests
         public List<IAnimal> Animals { get; set; } = new List<IAnimal>();
     }
 
-    public interface IAnimal
-    {
-
-    }
+    public interface IAnimal { }
 
     public abstract class Animal : IAnimal
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
+
     public class Cat : Animal
     {
         public int Lives { get; set; }
@@ -60,8 +58,8 @@ namespace EntityGraphQL.Tests
     public class PersonType
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public DateTime? Birthday { get; set; }
-        public IEnumerable<Dog> Dogs { get; set; }
+        public IEnumerable<Dog> Dogs { get; set; } = [];
     }
 }

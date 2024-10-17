@@ -1,9 +1,9 @@
-using Xunit;
 using System.Collections.Generic;
-using EntityGraphQL.Schema;
 using System.Linq;
-using EntityGraphQL.Authorization;
 using System.Security.Claims;
+using EntityGraphQL.Authorization;
+using EntityGraphQL.Schema;
+using Xunit;
 
 namespace EntityGraphQL.Tests
 {
@@ -14,8 +14,8 @@ namespace EntityGraphQL.Tests
         {
             var schema = SchemaBuilder.FromObject<RolesDataContext>();
 
-            Assert.Single(schema.Type<Project>().RequiredAuthorization.Roles);
-            Assert.Equal("admin", schema.Type<Project>().RequiredAuthorization.Roles.ElementAt(0).ElementAt(0));
+            Assert.Single(schema.Type<Project>().RequiredAuthorization!.Roles);
+            Assert.Equal("admin", schema.Type<Project>().RequiredAuthorization!.Roles.ElementAt(0).ElementAt(0));
         }
 
         [Fact]
@@ -24,8 +24,8 @@ namespace EntityGraphQL.Tests
             var schema = new SchemaProvider<object>();
             schema.AddType<Project>("Project", "All about the project");
 
-            Assert.Single(schema.Type<Project>().RequiredAuthorization.Roles);
-            Assert.Equal("admin", schema.Type<Project>().RequiredAuthorization.Roles.ElementAt(0).ElementAt(0));
+            Assert.Single(schema.Type<Project>().RequiredAuthorization!.Roles);
+            Assert.Equal("admin", schema.Type<Project>().RequiredAuthorization!.Roles.ElementAt(0).ElementAt(0));
         }
 
         [Fact]
@@ -33,12 +33,12 @@ namespace EntityGraphQL.Tests
         {
             var schema = SchemaBuilder.FromObject<RolesDataContext>();
 
-            Assert.Empty(schema.Type<Task>().RequiredAuthorization.Roles);
+            Assert.Empty(schema.Type<Task>().RequiredAuthorization!.Roles);
 
             schema.Type<Task>().RequiresAnyRole("admin");
 
-            Assert.Single(schema.Type<Task>().RequiredAuthorization.Roles);
-            Assert.Equal("admin", schema.Type<Task>().RequiredAuthorization.Roles.ElementAt(0).ElementAt(0));
+            Assert.Single(schema.Type<Task>().RequiredAuthorization!.Roles);
+            Assert.Equal("admin", schema.Type<Task>().RequiredAuthorization!.Roles.ElementAt(0).ElementAt(0));
         }
 
         [Fact]
@@ -46,19 +46,18 @@ namespace EntityGraphQL.Tests
         {
             var schema = SchemaBuilder.FromObject<RolesDataContext>();
 
-            Assert.Single(schema.Type<Project>().GetField("type", null).RequiredAuthorization.Roles);
-            Assert.Equal("can-type", schema.Type<Project>().GetField("type", null).RequiredAuthorization.Roles.ElementAt(0).ElementAt(0));
+            Assert.Single(schema.Type<Project>().GetField("type", null).RequiredAuthorization!.Roles);
+            Assert.Equal("can-type", schema.Type<Project>().GetField("type", null).RequiredAuthorization!.Roles.ElementAt(0).ElementAt(0));
         }
 
         [Fact]
         public void TestAttributeOnFieldAddField()
         {
             var schema = new SchemaProvider<object>();
-            schema.AddType<Project>("Project", "All about the project")
-            .AddField(p => p.Type, "The type info");
+            schema.AddType<Project>("Project", "All about the project").AddField(p => p.Type, "The type info");
 
-            Assert.Single(schema.Type<Project>().GetField("type", null).RequiredAuthorization.Roles);
-            Assert.Equal("can-type", schema.Type<Project>().GetField("type", null).RequiredAuthorization.Roles.ElementAt(0).ElementAt(0));
+            Assert.Single(schema.Type<Project>().GetField("type", null).RequiredAuthorization!.Roles);
+            Assert.Equal("can-type", schema.Type<Project>().GetField("type", null).RequiredAuthorization!.Roles.ElementAt(0).ElementAt(0));
         }
 
         [Fact]
@@ -66,12 +65,10 @@ namespace EntityGraphQL.Tests
         {
             var schema = new SchemaProvider<object>();
 
-            schema.AddType<Task>("Task", "All about tasks")
-            .AddField(p => p.IsActive, "Is it active")
-            .RequiresAnyRole("admin");
+            schema.AddType<Task>("Task", "All about tasks").AddField(p => p.IsActive, "Is it active").RequiresAnyRole("admin");
 
-            Assert.Single(schema.Type<Task>().GetField("isActive", null).RequiredAuthorization.Roles);
-            Assert.Equal("admin", schema.Type<Task>().GetField("isActive", null).RequiredAuthorization.Roles.ElementAt(0).ElementAt(0));
+            Assert.Single(schema.Type<Task>().GetField("isActive", null).RequiredAuthorization!.Roles);
+            Assert.Equal("admin", schema.Type<Task>().GetField("isActive", null).RequiredAuthorization!.Roles.ElementAt(0).ElementAt(0));
         }
 
         [Fact]
@@ -82,14 +79,15 @@ namespace EntityGraphQL.Tests
             var claims = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "admin") }, "authed");
             var gql = new QueryRequest
             {
-                Query = @"{
+                Query =
+                    @"{
                     projects { type }
                 }"
             };
 
             var result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
 
-            Assert.Equal("You are not authorized to access the 'type' field on type 'Project'.", result.Errors.First().Message);
+            Assert.Equal("Field 'projects' - You are not authorized to access the 'type' field on type 'Project'.", result.Errors!.First().Message);
 
             claims = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "admin"), new Claim(ClaimTypes.Role, "can-type") }, "authed");
             result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
@@ -105,14 +103,15 @@ namespace EntityGraphQL.Tests
             var claims = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "not-admin") }, "authed");
             var gql = new QueryRequest
             {
-                Query = @"{
+                Query =
+                    @"{
                     projects { id }
                 }"
             };
 
             var result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
 
-            Assert.Equal("You are not authorized to access the 'Project' type returned by field 'projects'.", result.Errors.First().Message);
+            Assert.Equal("Field 'projects' - You are not authorized to access the 'Project' type returned by field 'projects'.", result.Errors!.First().Message);
 
             claims = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "admin") }, "authed");
             result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
@@ -127,7 +126,8 @@ namespace EntityGraphQL.Tests
 
             var gql = new QueryRequest
             {
-                Query = @"{
+                Query =
+                    @"{
                     projects { id }
                 }"
             };
@@ -135,7 +135,7 @@ namespace EntityGraphQL.Tests
             var result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, null);
 
             Assert.NotNull(result.Errors);
-            Assert.Equal("You are not authorized to access the 'Project' type returned by field 'projects'.", result.Errors.First().Message);
+            Assert.Equal("Field 'projects' - You are not authorized to access the 'Project' type returned by field 'projects'.", result.Errors.First().Message);
         }
 
         [Fact]
@@ -146,7 +146,8 @@ namespace EntityGraphQL.Tests
             var claims = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "not-admin") }, "authed");
             var gql = new QueryRequest
             {
-                Query = @"{
+                Query =
+                    @"{
                     tasks {
                         project { id }
                     }
@@ -155,9 +156,36 @@ namespace EntityGraphQL.Tests
 
             var result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
 
-            Assert.Equal("You are not authorized to access the 'Project' type returned by field 'project'.", result.Errors.First().Message);
+            Assert.Equal("Field 'tasks' - You are not authorized to access the 'Project' type returned by field 'project'.", result.Errors!.First().Message);
 
             claims = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "admin") }, "authed");
+            result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
+
+            Assert.Null(result.Errors);
+        }
+
+        [Fact]
+        public void TestQueryType()
+        {
+            var schema = SchemaBuilder.FromObject<RolesDataContext>();
+            schema.Query().RequiresAnyRole("admin");
+
+            var claims = new ClaimsIdentity([new Claim(ClaimTypes.Role, "not-admin")], "authed");
+            var gql = new QueryRequest
+            {
+                Query =
+                    @"{
+                        tasks {
+                            project { id }
+                        }
+                    }"
+            };
+
+            var result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
+
+            Assert.Equal("You are not authorized to access the 'Query' type.", result.Errors!.First().Message);
+
+            claims = new ClaimsIdentity([new Claim(ClaimTypes.Role, "admin")], "authed");
             result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
 
             Assert.Null(result.Errors);
@@ -171,7 +199,8 @@ namespace EntityGraphQL.Tests
             var claims = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "not-admin") }, "authed");
             var gql = new QueryRequest
             {
-                Query = @"{
+                Query =
+                    @"{
                     tasks {
                         id description
                     }
@@ -180,9 +209,29 @@ namespace EntityGraphQL.Tests
 
             var result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
 
-            Assert.Equal("You are not authorized to access the 'description' field on type 'Task'.", result.Errors.First().Message);
+            Assert.Equal("Field 'tasks' - You are not authorized to access the 'description' field on type 'Task'.", result.Errors!.First().Message);
 
             claims = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "can-description") }, "authed");
+            result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
+
+            Assert.Null(result.Errors);
+        }
+
+        [Fact]
+        public void TestMutationAuth()
+        {
+            var schema = SchemaBuilder.FromObject<RolesDataContext>();
+            schema.AddMutationsFrom<RolesMutations>();
+
+            var claims = new ClaimsIdentity([new Claim(ClaimTypes.Role, "not-admin")], "authed");
+            var gql = new QueryRequest { Query = @"mutation T { needsAuth }" };
+
+            var result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
+
+            Assert.NotNull(result.Errors);
+            Assert.Equal("Field 'needsAuth' - You are not authorized to access the 'needsAuth' field on type 'Mutation'.", result.Errors.First().Message);
+
+            claims = new ClaimsIdentity([new Claim(ClaimTypes.Role, "can-mutate")], "authed");
             result = schema.ExecuteRequestWithContext(gql, new RolesDataContext(), null, new ClaimsPrincipal(claims));
 
             Assert.Null(result.Errors);
@@ -193,27 +242,39 @@ namespace EntityGraphQL.Tests
             public IEnumerable<Project> Projects { get; set; } = new List<Project>();
             public IEnumerable<Task> Tasks { get; set; } = new List<Task>();
         }
+
         [GraphQLAuthorize("admin")]
         internal class Project
         {
             public int Id { get; set; }
+
             [GraphQLAuthorize("can-type")]
             public int Type { get; set; }
-            public IEnumerable<Task> Tasks { get; set; }
+            public IEnumerable<Task> Tasks { get; set; } = [];
         }
 
         internal class Task
         {
             public int Id { get; set; }
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
             public bool IsActive { get; set; }
-            public Project Project { get; set; }
+            public Project? Project { get; set; }
 
             [GraphQLAuthorize("can-description")]
             [GraphQLField("description")]
             public string GetDescription()
             {
                 return "This is a description";
+            }
+        }
+
+        internal class RolesMutations
+        {
+            [GraphQLAuthorize("can-mutate")]
+            [GraphQLMutation]
+            public static bool NeedsAuth()
+            {
+                return true;
             }
         }
     }

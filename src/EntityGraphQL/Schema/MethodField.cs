@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using EntityGraphQL.Compiler;
 using EntityGraphQL.Compiler.Util;
-using EntityGraphQL.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EntityGraphQL.Schema;
@@ -79,7 +77,7 @@ public abstract class MethodField : BaseField
 
         // args in the mutation method - may be arguments in the graphql schema, services injected
         var allArgs = new List<object>();
-        var argsToValidate = new List<object>();
+        var argsToValidate = new Dictionary<string, object>();
         object? argInstance = null;
         var validationErrors = new List<string>();
 
@@ -102,9 +100,8 @@ public abstract class MethodField : BaseField
                 )!;
                 allArgs.Add(argInstance);
             }
-            else if (gqlRequestArgs != null && gqlRequestArgs.ContainsKey(p.Name!))
+            else if (gqlRequestArgs != null && Arguments.TryGetValue(p.Name!, out var argField))
             {
-                var argField = Arguments[p.Name!];
                 var value = ArgumentUtil.BuildArgumentFromMember(Schema, gqlRequestArgs, argField.Name, argField.RawType, argField.DefaultValue, validationErrors);
                 if (docVariables != null)
                 {
@@ -119,10 +116,10 @@ public abstract class MethodField : BaseField
                     value = ExpressionUtil.ChangeType(value, argField.RawType, Schema, executionOptions);
                 }
 
-                argField.Validate(value, p.Name!, validationErrors);
+                argField.Validate(value, Name, validationErrors);
 
                 allArgs.Add(value!);
-                argsToValidate.Add(value!);
+                argsToValidate.Add(p.Name!, value!);
             }
             else if (p.ParameterType == context.GetType())
             {
@@ -137,7 +134,7 @@ public abstract class MethodField : BaseField
             }
             else
             {
-                var argField = Arguments[p.Name!];
+                argField = Arguments[p.Name!];
                 if (argField.DefaultValue != null)
                 {
                     allArgs.Add(argField.DefaultValue);

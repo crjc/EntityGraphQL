@@ -149,7 +149,7 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
             {
                 try
                 {
-                    var argValue = ExpressionUtil.ChangeType(variables.GetValueOrDefault(name) ?? argType.DefaultValue, argType.RawType, Schema, null);
+                    var argValue = ExpressionUtil.ConvertObjectType(variables.GetValueOrDefault(name) ?? argType.DefaultValue, argType.RawType, Schema, null);
                     if (argValue == null && argType.IsRequired)
                         throw new EntityGraphQLCompilerException(
                             $"Supplied variable '{name}' is null while the variable definition is non-null. Please update query document or supply a non-null value."
@@ -372,19 +372,6 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
         {
             parameters.AddRange(compileContext.ConstantParameters.Keys);
             allArgs.AddRange(compileContext.ConstantParameters.Values);
-        }
-
-        // evaluate everything using ToList(). But handle null result
-        if (expression.Type.IsEnumerableOrArray() && !expression.Type.IsDictionary())
-        {
-            var returnType = typeof(List<>).MakeGenericType(expression.Type.GetEnumerableOrArrayType()!);
-            expression = Expression.Call(
-                typeof(EnumerableExtensions),
-                nameof(EnumerableExtensions.ToListWithNullCheck),
-                new[] { expression.Type.GetEnumerableOrArrayType()! },
-                expression,
-                Expression.Constant(node.Field!.ReturnType.TypeNotNullable)
-            );
         }
 
         if (compileContext.BulkData != null)

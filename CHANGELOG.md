@@ -1,9 +1,17 @@
+# 5.5.2
+
+## Fixes
+
+- #418 - Fix issue where field expressions using `ctx.Entities.FirstOrDefault(<filter>)` (`First*`, `Last*`, `Single*` methods with a filter) would duplicate the filter expression on each execution (e.g. making `ctx.Entities.Where(<filter>).Where(<filter>).FirstOrDefault()`). This also caused EntityFramework not to use it's cache for the expression
+- Fix issue with `RequiresAnyRole()` being called on a field with multiple roles added them as requiring all those roles vs. any role. This did not effect the `[GraphQLAuthorize]` attribute
+
 # 5.5.1
 
 ## Fixes
 
-- Make sure top level types have access checked (Query, Mutation and Subscription)
-- Fix #392 - Better handle `null` checks when executing against in-memory data
+- #425 - As per GraphQL Spec, Interfaces are not supported for Input Types
+- #426 - Fix custom directives with no arguments.
+- #427/#428 - Fix issue with connection style paging field extension when using last and before arguments
 
 # 5.5.0
 
@@ -11,6 +19,14 @@
 
 - Add `IgnoreAttributes` to `SchemaBuilderOptions` - A list of Attribute types which will cause the builder to ignore the field/property when building the schema. These are additional to GraphQLIgnoreAttribute
 - `.Resolve<>()` method on field changes return type to `object?` to avoid warnings when returning a valid nullable service call etc.
+- Add support for using a `struct` type as an object type in the schema, allowing you to query the fields on it. Previously it only worked if you added the `struct` as a Scalar Type
+- #419 - Add support for using `isAny([])` on nullable types
+
+## Fixes
+
+- Make sure top level types have access checked (Query, Mutation and Subscription)
+- Fix #392 - Better handle `null` checks when executing against in-memory data
+- #363 - Only use `ToListWithNullCheck` when we know we are executing with services, or have been told not to separate the execution.
 
 # 5.4.6
 

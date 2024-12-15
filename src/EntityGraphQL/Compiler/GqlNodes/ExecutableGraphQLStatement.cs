@@ -5,9 +5,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+
 using EntityGraphQL.Compiler.Util;
 using EntityGraphQL.Extensions;
 using EntityGraphQL.Schema;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EntityGraphQL.Compiler;
@@ -25,16 +27,13 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
     /// <summary>
     /// Variables that are expected to be passed in to execute this query
     /// </summary>
-    protected Dictionary<string, ArgType> OpDefinedVariables { get; set; } = new();
+    protected Dictionary<string, ArgType> OpDefinedVariables { get; set; } = [];
     public ISchemaProvider Schema { get; protected set; }
 
     public ParameterExpression? OpVariableParameter { get; }
 
     public IField? Field { get; }
-    public bool HasServices
-    {
-        get => Field?.Services.Count > 0;
-    }
+    public bool HasServices => Field?.Services.Count > 0;
 
     public IReadOnlyDictionary<string, object> Arguments { get; }
 
@@ -143,7 +142,7 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
 
         if (OpDefinedVariables.Count > 0 && OpVariableParameter != null)
         {
-            variables ??= new QueryVariables();
+            variables ??= [];
             variablesToUse = Activator.CreateInstance(OpVariableParameter.Type);
             foreach (var (name, argType) in OpDefinedVariables)
             {
@@ -259,11 +258,13 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
             }
         }
 
+#pragma warning disable IDE0074 // Use compound assignment
         if (expression == null)
         {
             // just do things normally
             expression = node.GetNodeExpression(compileContext, serviceProvider, fragments, OpVariableParameter, docVariables, contextParam, false, null, null, contextChanged: false, replacer);
         }
+#pragma warning restore IDE0074 // Use compound assignment
 
         var data = await ExecuteExpressionAsync(expression, runningContext, contextParam, serviceProvider, replacer, compileContext, node, true);
         return data;

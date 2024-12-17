@@ -205,8 +205,11 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
                 if (query != null)
                 {
                     var extractedParameters = ExtractServiceParameters(query.Body)
-                        .Distinct()
+                        .Distinct() 
                         .ToList();
+
+                    if (query.Parameters.Count() >= 1 && extractedParameters.Contains(query.Parameters.First()))
+                        extractedParameters.Remove(query.Parameters.First());
 
                     if (extractedParameters.Count > 0)
                     {

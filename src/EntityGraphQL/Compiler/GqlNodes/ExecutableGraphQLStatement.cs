@@ -300,6 +300,10 @@ public abstract class ExecutableGraphQLStatement : IGraphQLNode
              res.AddRange(ExtractServiceParameters(be.Left));
              res.AddRange(ExtractServiceParameters(be.Right));
          }
+         else if (expression is MemberExpression me)
+         {
+             res.AddRange(ExtractServiceParameters(me.Expression)); 
+         }
 
          return res;
      }

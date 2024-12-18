@@ -286,7 +286,7 @@ internal sealed class EntityGraphQLQueryWalker : QuerySyntaxWalker<IGraphQLNode?
     {
         if (fieldContext.ReturnType.IsList)
         {
-            return BuildDynamicSelectOnCollection(fieldContext, fieldExp, fieldContext.ReturnType.SchemaType, name, context, selection, arguments);
+            return BuildDynamicSelectOnCollection(fieldContext, fieldExp, fieldContext.ReturnType.TypeDotnet.GetEnumerableOrArrayType(), name, context, selection, arguments);
         }
 
         var graphQLNode = BuildDynamicSelectForObjectGraph(fieldContext, fieldExp, context, name, selection, arguments);
@@ -300,7 +300,7 @@ internal sealed class EntityGraphQLQueryWalker : QuerySyntaxWalker<IGraphQLNode?
             // rebuild the Expression so we keep any ConstantParameters
             var returnType = schemaProvider.GetSchemaType(listExp.Item1.Type.GetEnumerableOrArrayType()!, context.Field?.FromType.GqlType == GqlTypes.InputObject, null);
             // TODO this doubles the field visit
-            var collectionNode = BuildDynamicSelectOnCollection(fieldContext, listExp.Item1, returnType, name, context, selection, arguments);
+            var collectionNode = BuildDynamicSelectOnCollection(fieldContext, listExp.Item1, listExp.Item1.Type.GetEnumerableOrArrayType(), name, context, selection, arguments);
             return new GraphQLCollectionToSingleField(schemaProvider, collectionNode, graphQLNode, listExp.Item2!);
         }
         return graphQLNode;
@@ -313,7 +313,7 @@ internal sealed class EntityGraphQLQueryWalker : QuerySyntaxWalker<IGraphQLNode?
     private GraphQLListSelectionField BuildDynamicSelectOnCollection(
         IField actualField,
         Expression nodeExpression,
-        ISchemaType returnType,
+        Type returnType,
         string resultName,
         IGraphQLNode context,
         SelectionSetNode selection,
@@ -323,7 +323,7 @@ internal sealed class EntityGraphQLQueryWalker : QuerySyntaxWalker<IGraphQLNode?
         if (context == null)
             throw new EntityGraphQLCompilerException("context should not be null building select on collection");
 
-        var elementType = returnType.TypeDotnet;
+        var elementType = returnType;
         var fieldParam = Expression.Parameter(elementType, $"p_{elementType.Name}");
 
         var gqlNode = new GraphQLListSelectionField(schemaProvider, actualField, resultName, fieldParam, actualField.FieldParam ?? context.RootParameter, nodeExpression, context, arguments);
